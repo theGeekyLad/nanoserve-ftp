@@ -79,9 +79,8 @@ dependencies {
 //    implementation('org.nanohttpd:nanohttpd:2.2.0')
 
     // https://mvnrepository.com/artifact/io.javalin/javalin
-    implementation 'io.javalin:javalin:2.8.0'
+    implementation 'io.javalin:javalin:4.0.0'
 
     // https://mvnrepository.com/artifact/com.j2html/j2html
     implementation 'com.j2html:j2html:1.6.0'
-
 }
