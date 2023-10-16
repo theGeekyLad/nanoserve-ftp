@@ -124,6 +124,13 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+
+                post("/delete") { ctx ->
+                    GlobalScope.launch(Dispatchers.Main) {
+                        Toast.makeText(applicationContext, ctx.body(), Toast.LENGTH_LONG).show()
+                    }
+                    ctx.status(200)
+                }
             }
 
 //        TODO authenticate session
@@ -170,12 +177,13 @@ class MainActivity : ComponentActivity() {
                 h1("Rahul's Pixel Watch"),
                 i(h3("Storage: ${Math.floor(getFreeSpace() * 1.0 / getTotalSpace() * 100).toInt()}% free (${getFreeSpace()} GB / ${getTotalSpace()} GB)")),
                 hr(),
-                base().withHref("http://$ipAddress:7070/list/"),
+                base().withHref("http://localhost:7070/list/"),
                 table(
                     thead(
                         tr(
                             td(h3("File")),
-                            td(h3("Size"))
+                            td(h3("Size")),
+                            td(h3("Actions"))
                         )
                     ),
                     tbody(
@@ -187,7 +195,12 @@ class MainActivity : ComponentActivity() {
                                         .attr("data-file-name", file.name)
                                         .attr("style", "")
                                 ),
-                                if (file.isFile) td(file.length().toString()) else null
+                                if (file.isFile) td(file.length().toString()) else null,
+                                if (file.isFile) td(
+                                    button("Delete")
+                                        .withClass("button-delete-file")
+                                        .attr("data-file-name", file.name)
+                                ) else null
                             )
                         }.toTypedArray()
                     )
@@ -217,16 +230,19 @@ class MainActivity : ComponentActivity() {
 
                 script().withSrc("https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"),
                 script("" +
+                        "   function getDirPath() {" +
+                        "       const url = window.location.href;" +
+                        "       return url.substring(" +
+                        "       url.indexOf('list') + 4" +
+                        "       );" +
+                        "   }" +
+                        "" +
                         "   function uploadFile() {" +
                         "       var files = document.getElementById('input-file-upload').files;" +
                         "       var formData = new FormData();" +
                         "       Array.from(files).forEach(file => {" +
                         "           console.log('file', file);" +
-                        "           const url = window.location.href;" +
-                        "           console.log('url', url);" +
-                        "           const subUrl = url.substring(" +
-                        "               url.indexOf('list') + 4" +
-                        "           );" +
+                        "           const subUrl = getDirPath();" +
                         "           const newFile = new File(" +
                         "               [file]," +
                         "               subUrl + file.name," +
@@ -275,6 +291,24 @@ class MainActivity : ComponentActivity() {
                         "   document.getElementById('input-file-upload').addEventListener('change', (e) => {" +
                         "       uploadFile();" +
                         "   }, false);" +
+                        "" +
+                        "   var buttonsFileDelete = document.getElementsByClassName('button-delete-file');" +
+                        "   Array.from(buttonsFileDelete).forEach(buttonFileDelete => {" +
+                        "       buttonFileDelete.addEventListener('click', e => {" +
+                        "           const fileName = e.target.getAttribute('data-file-name');" +
+                        "           const mustDelete = confirm('Delete \"' + fileName + '\"?');" +
+                        "           if (mustDelete) {" +
+                        "               axios" +
+                        "                   .post('/delete', getDirPath() + fileName)" +
+                        "                   .then(res => {" +
+                        "                       window.location.reload();" +
+                        "                   })" +
+                        "                   .catch(err => {" +
+                        "                       alert('Could not perform delete!')" +
+                        "                   });" +
+                        "           }" +
+                        "       });" +
+                        "   });" +
                         "").withType("text/javascript")
             )
         ).render())
