@@ -126,10 +126,12 @@ class MainActivity : ComponentActivity() {
                 }
 
                 post("/delete") { ctx ->
-                    GlobalScope.launch(Dispatchers.Main) {
-                        Toast.makeText(applicationContext, ctx.body(), Toast.LENGTH_LONG).show()
-                    }
-                    ctx.status(200)
+                    val filePath = ctx.body()
+                    val success = File(Environment.getExternalStorageDirectory(), filePath).delete()
+                    if (success)
+                        ctx.status(200)
+                    else
+                        ctx.status(500)
                 }
             }
 
@@ -299,7 +301,7 @@ class MainActivity : ComponentActivity() {
                         "           const mustDelete = confirm('Delete \"' + fileName + '\"?');" +
                         "           if (mustDelete) {" +
                         "               axios" +
-                        "                   .post('/delete', getDirPath() + fileName)" +
+                        "                   .post('http://localhost:7070/delete', getDirPath() + fileName)" +
                         "                   .then(res => {" +
                         "                       window.location.reload();" +
                         "                   })" +
