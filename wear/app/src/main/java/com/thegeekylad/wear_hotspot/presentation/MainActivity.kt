@@ -197,7 +197,7 @@ class MainActivity : ComponentActivity() {
         val potentialDir = File(Environment.getExternalStorageDirectory(), path)
 
         if (potentialDir.isFile) {
-            ctx.header("Content-Disposition", "filename=\"${potentialDir.name}\"")
+            ctx.header("Content-Disposition", "attachment;filename=\"${potentialDir.name}\"")
             ctx.result(FileInputStream(potentialDir.absolutePath))
             return
         }
