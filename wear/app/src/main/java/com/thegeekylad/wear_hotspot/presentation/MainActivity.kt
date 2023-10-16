@@ -54,12 +54,15 @@ import java.lang.Exception
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.Base64
+import java.util.Random
 
 @ExperimentalUnitApi
 class MainActivity : ComponentActivity() {
 
     var app: Javalin? = null
     var ipAddress = mutableStateOf("")
+    var random: Random = Random()
+    var port = mutableStateOf(0)
 
     @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,19 +76,27 @@ class MainActivity : ComponentActivity() {
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = "File Server", fontWeight = FontWeight.Black, fontStyle = FontStyle.Italic)
-                    Text(text = ipAddress.value, fontSize = TextUnit(25f, TextUnitType.Sp))
-                    Text(text = "Port: 7070")
+                    Text(
+                        text = "NanoServe FTP",
+                        fontWeight = FontWeight.Black,
+                        fontStyle = FontStyle.Italic
+                    )
+                    Text(text = ipAddress.value, fontSize = TextUnit(30f, TextUnitType.Sp))
+                    Text(text = port.value.toString())
                 }
             }
         }
+    }
 
+    override fun onResume() {
+        super.onResume()
         // keep screen on
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         // get ip
         val connectivityManager = getSystemService(ConnectivityManager::class.java)
-        val linkProperties = connectivityManager.getLinkProperties(connectivityManager.activeNetwork)
+        val linkProperties =
+            connectivityManager.getLinkProperties(connectivityManager.activeNetwork)
         val dhcpAddress = linkProperties?.dhcpServerAddress?.hostAddress
         val dhcpAddressType = dhcpAddress?.substring(0, dhcpAddress.lastIndexOf("."))
         val linkAddresses = linkProperties?.linkAddresses
@@ -93,47 +104,61 @@ class MainActivity : ComponentActivity() {
             linkAddress.address.hostAddress!!.startsWith(dhcpAddressType!!)
         }!!.address.hostAddress!!.toString()
 
+        // randomize port
+        port.value = random.nextInt(65535)
+
         // run server
-        app = Javalin
-            .create { config ->
-                config.enableCorsForAllOrigins()
-            }
-            .apply {
-                get("/") { ctx -> ctx.result("Hello World") }.start(7070)
-
-                get("/list/*") { ctx ->
-                    try {
-                        val path = ctx.path().replace("%20", " ")
-                        val indexPathStart = path.indexOf("list") + 4
-                        if (path.length > indexPathStart)
-                            serveContentForPath(ctx, path.substring(indexPathStart))
-                        else
-                            serveContentForPath(ctx)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+        while (true) {
+            try {
+                app = Javalin
+                    .create { config ->
+                        config.enableCorsForAllOrigins()
                     }
-                }
+                    .start(port.value)
+                break
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Thread.sleep(100)
+            }
+        }
 
-                post("/upload") { ctx ->
-                    ctx.uploadedFiles("files").forEach { uploadedFile ->
-                        try {
-                            Log.e("UPLOAD_DIR", uploadedFile.filename)
-                            FileUtil.streamToFile(uploadedFile.content, Environment.getExternalStorageDirectory().absolutePath + uploadedFile.filename)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }
-                }
+        app!!.get("/") { ctx -> ctx.result("Hello World") }
 
-                post("/delete") { ctx ->
-                    val filePath = ctx.body()
-                    val success = File(Environment.getExternalStorageDirectory(), filePath).delete()
-                    if (success)
-                        ctx.status(200)
-                    else
-                        ctx.status(500)
+        app!!.get("/list/*") { ctx ->
+            try {
+                val path = ctx.path().replace("%20", " ")
+                val indexPathStart = path.indexOf("list") + 4
+                if (path.length > indexPathStart)
+                    serveContentForPath(ctx, path.substring(indexPathStart))
+                else
+                    serveContentForPath(ctx)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        app!!.post("/upload") { ctx ->
+            ctx.uploadedFiles("files").forEach { uploadedFile ->
+                try {
+                    Log.e("UPLOAD_DIR", uploadedFile.filename)
+                    FileUtil.streamToFile(
+                        uploadedFile.content,
+                        Environment.getExternalStorageDirectory().absolutePath + uploadedFile.filename
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
+        }
+
+        app!!.post("/delete") { ctx ->
+            val filePath = ctx.body()
+            val success = File(Environment.getExternalStorageDirectory(), filePath).delete()
+            if (success)
+                ctx.status(200)
+            else
+                ctx.status(500)
+        }
 
 //        TODO authenticate session
 //        app.before("/list/*") { ctx ->
@@ -147,7 +172,27 @@ class MainActivity : ComponentActivity() {
         app?.stop()
     }
 
-    fun serveContentForPath(ctx: Context, path: String = "") {
+    private fun getWholeSize(bytes: Long): String {
+        val getUnit: (index: Int) -> String = { index ->
+            when (index) {
+                0 -> "B"
+                1 -> "KB"
+                2 -> "MB"
+                3 -> "GB"
+                else -> "?"
+            }
+        }
+        var _bytes = bytes
+        var index = 0;
+
+        while (_bytes / 1024 > 0) {
+            _bytes /= 1024
+            index++
+        }
+        return "$_bytes ${getUnit(index)}"
+    }
+
+    private fun serveContentForPath(ctx: Context, path: String = "") {
         // list all files
         val potentialDir = File(Environment.getExternalStorageDirectory(), path)
 
@@ -173,13 +218,13 @@ class MainActivity : ComponentActivity() {
                         "}" +
                         ".ml-1 {" +
                         "   margin-left: 1rem;" +
-                        "}")
+                        "}"),
             ),
             body(
                 h1("Rahul's Pixel Watch"),
                 i(h3("Storage: ${Math.floor(getFreeSpace() * 1.0 / getTotalSpace() * 100).toInt()}% free (${getFreeSpace()} GB / ${getTotalSpace()} GB)")),
                 hr(),
-                base().withHref("http://localhost:7070/list/"),
+                base().withHref("http://localhost:${port.value}/list/"),
                 table(
                     thead(
                         tr(
@@ -197,7 +242,7 @@ class MainActivity : ComponentActivity() {
                                         .attr("data-file-name", file.name)
                                         .attr("style", "")
                                 ),
-                                if (file.isFile) td(file.length().toString()) else null,
+                                if (file.isFile) td(getWholeSize(file.length())) else null,
                                 if (file.isFile) td(
                                     button("Delete")
                                         .withClass("button-delete-file")
@@ -301,7 +346,7 @@ class MainActivity : ComponentActivity() {
                         "           const mustDelete = confirm('Delete \"' + fileName + '\"?');" +
                         "           if (mustDelete) {" +
                         "               axios" +
-                        "                   .post('http://localhost:7070/delete', getDirPath() + fileName)" +
+                        "                   .post('http://localhost:${port.value}/delete', getDirPath() + fileName)" +
                         "                   .then(res => {" +
                         "                       window.location.reload();" +
                         "                   })" +
