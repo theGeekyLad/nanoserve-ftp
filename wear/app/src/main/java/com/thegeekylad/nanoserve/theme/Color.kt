@@ -1,4 +1,4 @@
-package com.thegeekylad.wear_hotspot.presentation.theme
+package com.thegeekylad.nanoserve.theme
 
 import androidx.compose.ui.graphics.Color
 import androidx.wear.compose.material.Colors

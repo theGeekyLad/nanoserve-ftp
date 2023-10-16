@@ -4,56 +4,39 @@
  * changes to the libraries and their usages.
  */
 
-package com.thegeekylad.wear_hotspot.presentation
+package com.thegeekylad.nanoserve
 
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.net.ConnectivityManager
-import android.net.Uri
-import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.os.Environment
 import android.os.StatFs
-import android.provider.Settings
 import android.util.Log
 import android.view.WindowManager
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.ExperimentalUnitApi
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import com.thegeekylad.wear_hotspot.presentation.theme.Wear_HotspotTheme
+import com.thegeekylad.nanoserve.theme.Wear_HotspotTheme
 import io.javalin.Javalin
 import io.javalin.core.util.FileUtil
 import io.javalin.http.Context
 import j2html.TagCreator.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.lang.Exception
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.util.Base64
 import java.util.Random
 
 @ExperimentalUnitApi
@@ -207,7 +190,7 @@ class MainActivity : ComponentActivity() {
         // html content
         ctx.html(html(
             head(
-                title("Watch FTP"),
+                title("NanoServe FTP"),
                 style("" +
                         ".file-item {" +
                         "   text-decoration: underline;" +

@@ -1,4 +1,4 @@
-package com.thegeekylad.wear_hotspot.presentation.theme
+package com.thegeekylad.nanoserve.theme
 
 import androidx.compose.runtime.Composable
 import androidx.wear.compose.material.MaterialTheme

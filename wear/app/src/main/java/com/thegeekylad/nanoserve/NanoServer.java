@@ -1,4 +1,4 @@
-package com.thegeekylad.wear_hotspot.presentation;
+package com.thegeekylad.nanoserve;
 
 //import android.util.Log;
 //
