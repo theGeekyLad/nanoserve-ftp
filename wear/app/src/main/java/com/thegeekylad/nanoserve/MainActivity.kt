@@ -8,6 +8,7 @@ package com.thegeekylad.nanoserve
 
 import android.annotation.SuppressLint
 import android.net.ConnectivityManager
+import android.os.AsyncTask
 import android.os.Bundle
 import android.os.Environment
 import android.os.StatFs
@@ -45,7 +46,7 @@ class MainActivity : ComponentActivity() {
     var app: Javalin? = null
     var ipAddress = mutableStateOf("")
     var random: Random = Random()
-    var port = mutableStateOf(0)
+    var port = mutableStateOf("0")
 
     @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,8 +65,8 @@ class MainActivity : ComponentActivity() {
                         fontWeight = FontWeight.Black,
                         fontStyle = FontStyle.Italic
                     )
-                    Text(text = ipAddress.value, fontSize = TextUnit(30f, TextUnitType.Sp))
-                    Text(text = port.value.toString())
+                    Text(text = if (port.value.toIntOrNull() == null) "-.-.-.-" else ipAddress.value, fontSize = TextUnit(30f, TextUnitType.Sp))
+                    Text(text = port.value)
                 }
             }
         }
@@ -81,6 +82,12 @@ class MainActivity : ComponentActivity() {
         val linkProperties =
             connectivityManager.getLinkProperties(connectivityManager.activeNetwork)
         val dhcpAddress = linkProperties?.dhcpServerAddress?.hostAddress
+
+        if (dhcpAddress == null) {
+            port.value = "No network!"
+            return
+        }
+
         val dhcpAddressType = dhcpAddress?.substring(0, dhcpAddress.lastIndexOf("."))
         val linkAddresses = linkProperties?.linkAddresses
         ipAddress.value = linkAddresses?.find { linkAddress ->
@@ -88,7 +95,7 @@ class MainActivity : ComponentActivity() {
         }!!.address.hostAddress!!.toString()
 
         // randomize port
-        port.value = random.nextInt(65535)
+        port.value = random.nextInt(65535).toString()
 
         // run server
         while (true) {
@@ -97,7 +104,7 @@ class MainActivity : ComponentActivity() {
                     .create { config ->
                         config.enableCorsForAllOrigins()
                     }
-                    .start(port.value)
+                    .start(port.value.toInt())
                 break
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -207,7 +214,7 @@ class MainActivity : ComponentActivity() {
                 h1("Rahul's Pixel Watch"),
                 i(h3("Storage: ${Math.floor(getFreeSpace() * 1.0 / getTotalSpace() * 100).toInt()}% free (${getFreeSpace()} GB / ${getTotalSpace()} GB)")),
                 hr(),
-                base().withHref("http://localhost:${port.value}/list/"),
+                base().withHref("http://${ipAddress.value}:${port.value}/list/"),
                 table(
                     thead(
                         tr(
@@ -329,7 +336,7 @@ class MainActivity : ComponentActivity() {
                         "           const mustDelete = confirm('Delete \"' + fileName + '\"?');" +
                         "           if (mustDelete) {" +
                         "               axios" +
-                        "                   .post('http://localhost:${port.value}/delete', getDirPath() + fileName)" +
+                        "                   .post('http://${ipAddress.value}:${port.value}/delete', getDirPath() + fileName)" +
                         "                   .then(res => {" +
                         "                       window.location.reload();" +
                         "                   })" +
